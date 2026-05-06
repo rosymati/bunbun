@@ -1,4 +1,4 @@
-name: Update bun
+name: Daily bun and nixpkgs update
 
 on:
   schedule:
@@ -10,30 +10,33 @@ permissions:
 
 jobs:
   update:
+    name: Check for new bun release and bump nixpkgs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: NixOS/nix-installer-action@main
+      - name: Install Nix
+        uses: NixOS/nix-installer-action@main
 
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Update bun
+      - name: Check for new bun release and update hashes
         run: |
           echo "old=$(cat VERSION)" >> "$GITHUB_ENV"
           bash update.sh
           echo "new=$(cat VERSION)" >> "$GITHUB_ENV"
 
-      - name: Commit bun update
+      - name: Commit bun version bump
         run: |
           git add VERSION bun.nix
           git diff --cached --quiet && exit 0
           git commit -m "bun: ${{ env.old }} -> ${{ env.new }}"
 
-      - name: Update flake.lock
+      - name: Bump nixpkgs in flake.lock
         run: nix flake update
 
       - name: Commit flake.lock
@@ -42,5 +45,5 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "flake.lock: bump nixpkgs"
 
-      - name: Push
+      - name: Push commits
         run: git push
