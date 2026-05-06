@@ -16,16 +16,31 @@ jobs:
 
       - uses: NixOS/nix-installer-action@main
 
-      - name: Update bun.nix and flake.lock
+      - name: Configure git
         run: |
-          bash update.sh
-          nix flake update
-
-      - name: Commit and push
-        run: |
-          git diff --quiet && exit 0
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add bun.nix flake.lock
-          git commit -m "$(git diff --cached -- bun.nix | grep -oP '(?<=version = ")[0-9.]+' | paste - - -d' -> ' | sed 's/^/bun: /')"
-          git push
+
+      - name: Update bun
+        run: |
+          echo "old=$(cat VERSION)" >> "$GITHUB_ENV"
+          bash update.sh
+          echo "new=$(cat VERSION)" >> "$GITHUB_ENV"
+
+      - name: Commit bun update
+        run: |
+          git add VERSION bun.nix
+          git diff --cached --quiet && exit 0
+          git commit -m "bun: ${{ env.old }} -> ${{ env.new }}"
+
+      - name: Update flake.lock
+        run: nix flake update
+
+      - name: Commit flake.lock
+        run: |
+          git add flake.lock
+          git diff --cached --quiet && exit 0
+          git commit -m "flake.lock: bump nixpkgs"
+
+      - name: Push
+        run: git push

@@ -10,7 +10,7 @@
 }:
 
 stdenvNoCC.mkDerivation (finalAttrs: {
-  version = "1.3.13";
+  version = lib.trim (builtins.readFile ./VERSION);
   pname = "bun";
 
   src =
